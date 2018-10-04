@@ -15,14 +15,8 @@ public class Timeline {
 	
 	public static void main(String[] args) {
 		String path = "project.pod.xml";
-		int part = 0;
-		
 		if (args.length > 0) {
 			path = args[0];
-		}
-		
-		if (args.length > 1) {
-			part = Integer.parseInt(args[1]);
 		}
 		
         TimelineBuilder timeline = new TimelineBuilder(new MSProject(new File(path)));
@@ -30,7 +24,7 @@ public class Timeline {
 		try (
 			FileOutputStream output = new FileOutputStream(new File(path + ".pptx"));
 		) {
-			timeline.writeSlides(output, part);				
+			timeline.writeSlides(output);				
 		} catch (Exception e) {
 			logger.severe(e.getMessage());
 		}
