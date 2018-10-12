@@ -54,7 +54,7 @@ public class TimelineBuilder {
 	public  void writeSlides(FileOutputStream output) throws IOException {
 		XMLSlideShow pptx = new XMLSlideShow();
 		
-		buildSlide(pptx.createSlide(), 0);
+		createSlides(pptx, project.getTasks());
 		
 		try {
 			pptx.write(output);
@@ -62,11 +62,33 @@ public class TimelineBuilder {
 			pptx.close();
 		}
 	}
+	
+	protected void createSlides (XMLSlideShow pptx, List<Task> taskList) {
+		buildSlide(pptx.createSlide(), taskList);
+		
+		for (Task task: taskList) {
+			List<Task> childTaskList = task.getChildTasks();
+			if (childTaskList.size() > 0) {
+				createSlides(pptx, childTaskList);
+			}
+		}
+	}
 
-	public  void writeSlides(FileOutputStream output, int part) throws IOException {
+	public  void writeSlides(FileOutputStream output, int part, int subPart) throws IOException {
 		XMLSlideShow pptx = new XMLSlideShow();
 		
-		buildSlide(pptx.createSlide(), part);
+		List<Task> taskList = null;
+		
+		if (part == 0) {
+			taskList = project.getTasks();
+		} else {
+			taskList = project.getTasks().get(part - 1).getChildTasks();
+			if (subPart > 0) {
+				taskList = taskList.get(subPart -1).getChildTasks();
+			}
+		}
+		
+		buildSlide(pptx.createSlide(), taskList);
 		
 		try {
 			pptx.write(output);
@@ -75,7 +97,7 @@ public class TimelineBuilder {
 		}
 	}
 
-	protected void buildSlide(XSLFSlide slide, int part) {
+	protected void buildSlide(XSLFSlide slide, List<Task> taskList) {
 		Dimension pageSize = slide.getSlideShow().getPageSize();
 	
 		pageSize.width = pageSize.height * 16 / 9;
@@ -91,15 +113,11 @@ public class TimelineBuilder {
 		double labelWidth = theme.getStreamLabelWidth() + theme.getTaskLabelWidth();
 		
 		TimeBar bar = new XSLFTimeBar(project.getStartDate(), project.getEndDate(), slide);
-		bar.setPrecision(TimeBar.Precision.QUARTERS);
+		bar.setPrecision(TimeBar.Precision.MONTHS);
 		bar.setTextSize(theme.getBarTextSize());
 		bar.drawTimeBar(x0 + labelWidth, y0, width - labelWidth, theme.getTimeBarHeight(),theme.getBarColor());
-		
-		if (part == 0) {
-			buildTasks(slide, bar, project.getTasks(), x0, y0 + theme.getTimeBarHeight() + theme.getStreamSpacing() + theme.getTaskSpacing());
-		} else {
-			buildTasks(slide, bar, project.getTasks().get(part - 1).getChildTasks(), x0, y0 + theme.getTimeBarHeight() + theme.getStreamSpacing() + theme.getTaskSpacing());
-		}
+				
+		buildTasks(slide, bar, taskList, x0, y0 + theme.getTimeBarHeight() + theme.getStreamSpacing() + theme.getTaskSpacing());
 		
 		int offset = 0;
 		for (Milestone milestone: project.getMilestones()) {			
